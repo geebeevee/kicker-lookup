@@ -80,7 +80,7 @@
 
   <div id="layout">
     <div id="container">
-      <h2>🎧 Artist Prior Appearance Lookup</h2>
+      <h2>🎧 Artist Submission Lookup</h2>
       <input type="text" id="artistInput" placeholder="Start typing an artist name..." autocomplete="off" />
       <div id="suggestions" class="suggestion-box"></div>
       <div id="result"></div>
@@ -89,11 +89,10 @@
   </div>
 
   <footer>
-    <p>Blame Rhys for this | Powered by Wikipedia | In Case of Conflict - The Spreadsheet Wins | v1.10 </p>
+    <p>Blame Rhys for this | Powered by Wikipedia | In Case of Conflict - The Spreadsheet Wins | v1.11 </p>
   </footer>
 
   <script>
-    const allowableArtistCount = 4;
     let currentRound = 0;
 
     // Dark mode toggle
@@ -110,9 +109,14 @@
       const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSeM1Sc2iN556e_zWnxQagRLkXSpAs8k0OyBdlay0qF1OylOOTdaNReXJVPhzkhgQ/pub?gid=42417497&single=true&output=csv";
       const res = await fetch(csvUrl);
       const csv = await res.text();
-      const lines = csv.split(/\r?\n/);
-      lines.shift(); // dummy
-      lines.shift(); // header
+      let allowableArtistCount = 4; // fallback default - should read this from cell AB1 in sheet
+const lines = csv.split(/\r?\n/);
+const headerLine = lines.shift(); // First row: "Allowable Artist Count",4
+const headerCols = headerLine.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(c => c.replace(/^"(.*)"$/, '$1')) || [];
+const parsedCount = parseInt(headerCols[1], 10);
+if (!isNaN(parsedCount)) allowableArtistCount = parsedCount;
+lines.shift(); // Skip second row (actual header for artist data)
+
       const artistCounts = {}, artistSongs = {};
       lines.forEach(line => {
         if (!line.trim()) return;
