@@ -89,7 +89,7 @@
   </div>
 
   <footer>
-    <p>Blame Rhys for this | Powered by Wikipedia | v1.08</p>
+    <p>Blame Rhys for this | Powered by Wikipedia | In Case of Conflict - The Spreadsheet Wins | v1.10 </p>
   </footer>
 
   <script>
@@ -107,7 +107,7 @@
 
     // Load artist data
     async function loadArtistCounts() {
-      const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQG9L-FXugJcPmIuC4UHMajvGaZOG7JV42k6xNuu3sysNghVJSyXnoOPm81WD5aMg/pub?gid=42417497&single=true&output=csv";
+      const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSeM1Sc2iN556e_zWnxQagRLkXSpAs8k0OyBdlay0qF1OylOOTdaNReXJVPhzkhgQ/pub?gid=42417497&single=true&output=csv";
       const res = await fetch(csvUrl);
       const csv = await res.text();
       const lines = csv.split(/\r?\n/);
@@ -161,9 +161,9 @@
 
       let warning = "";
       if (count >= allowableArtistCount) {
-        warning = `<p style="color:red"><strong>Don't Submit This Band – too many submissions</strong></p>`;
+        warning = `<p style="color:red"><strong>Don't Submit This Artist – too many submissions</strong></p>`;
       } else if (songs.some(s => s.league === currentRound)) {
-        warning = `<p style="color:red"><strong>Don't Submit This Band – has been played this round</strong></p>`;
+        warning = `<p style="color:red"><strong>Don't Submit This Artist – has been played this round</strong></p>`;
       }
 
       result.innerHTML = `
