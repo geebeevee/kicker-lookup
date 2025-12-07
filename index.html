@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kicker's Music League</title>
+  <style>
+    :root {
+      --bg: #f8f9fa;
+      --bg-alt: #e9ecef;
+      --text: #000;
+      --card-bg: #fff;
+      --link: #0077cc;
+      --border: #ccc;
+      --hover: #e6e6e6;
+      --shadow: rgba(0,0,0,0.1);
+    }
+    body.dark {
+      --bg: #121212;
+      --bg-alt: #1e1e1e;
+      --text: #f1f1f1;
+      --card-bg: #1e1e1e;
+      --link: #66b2ff;
+      --border: #333;
+      --hover: #2a2a2a;
+      --shadow: rgba(0,0,0,0.5);
+    }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 20px;
+      background: linear-gradient(to right, var(--bg), var(--bg-alt));
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
+    }
+    header { text-align: center; margin-bottom: 20px; }
+    header h1 { font-size: 28px; margin-bottom: 5px; }
+    header p { font-size: 16px; opacity: 0.8; margin: 0; }
+    #darkToggle {
+      margin-top: 10px; padding: 6px 12px; border: none; border-radius: 6px;
+      background: var(--link); color: #fff; cursor: pointer; font-size: 14px;
+    }
+    #layout { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+    #container, #artistInfo {
+      background: var(--card-bg); padding: 15px; border-radius: 12px;
+      box-shadow: 0 4px 12px var(--shadow); flex: 1 1 100%;
+    }
+    #container { max-width: 520px; }
+    #artistInfo { max-width: 380px; min-height: 180px; }
+    #artistInfo img { max-width: 100%; border-radius: 8px; margin-bottom: 10px; }
+    #artistInput {
+      width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border);
+      font-size: 16px; background: var(--card-bg); color: var(--text);
+    }
+    #result { margin-top: 15px; font-size: 16px; font-weight: bold; }
+    .suggestion-box {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
+      margin-top: 5px; max-height: 200px; overflow-y: auto; display: none;
+      position: absolute; width: 93%; z-index: 1000;
+    }
+    .suggestion { padding: 8px; cursor: pointer; }
+    .suggestion:hover { background: var(--hover); }
+    .wiki-link { color: var(--link); text-decoration: none; }
+    .wiki-link:hover { text-decoration: underline; }
+    footer { text-align: center; margin-top: 40px; font-size: 12px; opacity: 0.7; }
+    @media (max-width: 600px) {
+      #layout { flex-direction: column; }
+      header h1 { font-size: 22px; }
+      #artistInput { font-size: 14px; }
+      #result { font-size: 14px; }
+      #container, #artistInfo { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kicker's Music League</h1>
+    <p>The spreadsheet must be obeyed.......</p>
+    <button id="darkToggle">Toggle dark mode</button>
+  </header>
+
+  <div id="layout">
+    <div id="container">
+      <h2>🎧 Artist appearance lookup</h2>
+      <input type="text" id="artistInput" placeholder="Start typing an artist name..." autocomplete="off" />
+      <div id="suggestions" class="suggestion-box"></div>
+      <div id="result"></div>
+    </div>
+    <div id="artistInfo"></div>
+  </div>
+
+  <footer>
+    <p>Blame Rhys for this | Powered by Wikipedia | v1.08</p>
+  </footer>
+
+  <script>
+    const allowableArtistCount = 4;
+    let currentRound = 0;
+
+    // Dark mode toggle
+    const toggleBtn = document.getElementById('darkToggle');
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme === 'dark') document.body.classList.add('dark');
+    toggleBtn.addEventListener('click', () => {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    });
+
+    // Load artist data
+    async function loadArtistCounts() {
+      const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQG9L-FXugJcPmIuC4UHMajvGaZOG7JV42k6xNuu3sysNghVJSyXnoOPm81WD5aMg/pub?gid=42417497&single=true&output=csv";
+      const res = await fetch(csvUrl);
+      const csv = await res.text();
+      const lines = csv.split(/\r?\n/);
+      lines.shift(); // dummy
+      lines.shift(); // header
+      const artistCounts = {}, artistSongs = {};
+      lines.forEach(line => {
+        if (!line.trim()) return;
+        const cols = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(c => c.replace(/^"(.*)"$/, '$1')) || [];
+        const league = parseInt(cols[0], 10);
+        const artist = cols[1];
+        const song = cols[2];
+        if (!artist) return;
+        if (!isNaN(league) && league > currentRound) currentRound = league;
+        artistCounts[artist] = (artistCounts[artist] || 0) + 1;
+        if (!artistSongs[artist]) artistSongs[artist] = [];
+        artistSongs[artist].push({ song, league });
+      });
+      return { artistCounts, artistSongs };
+    }
+    let artistCounts = {}, artistSongs = {};
+    loadArtistCounts().then(data => { artistCounts = data.artistCounts; artistSongs = data.artistSongs; });
+
+    const input = document.getElementById('artistInput');
+    const suggestions = document.getElementById('suggestions');
+    const result = document.getElementById('result');
+
+    input.addEventListener('input', () => {
+      const query = input.value.toLowerCase();
+      suggestions.innerHTML = '';
+      if (!query) { suggestions.style.display = 'none'; return; }
+      const matches = Object.keys(artistCounts).filter(a => a.toLowerCase().includes(query));
+      if (matches.length > 0) {
+        suggestions.style.display = 'block';
+        matches.forEach(match => {
+          const div = document.createElement('div');
+          div.className = 'suggestion';
+          div.textContent = match;
+          div.onclick = () => selectArtist(match);
+          suggestions.appendChild(div);
+        });
+      } else { suggestions.style.display = 'none'; }
+    });
+
+    function selectArtist(artist) {
+      input.value = artist;
+      suggestions.style.display = 'none';
+      const count = artistCounts[artist] || 0;
+      const songs = artistSongs[artist] || [];
+      const songList = songs.map(s => `<li>${s.song} (League ${s.league})</li>`).join("");
+
+      let warning = "";
+      if (count >= allowableArtistCount) {
+        warning = `<p style="color:red"><strong>Don't Submit This Band – too many submissions</strong></p>`;
+      } else if (songs.some(s => s.league === currentRound)) {
+        warning = `<p style="color:red"><strong>Don't Submit This Band – has been played this round</strong></p>`;
+      }
+
+      result.innerHTML = `
+        🎤 <strong>${artist}</strong> has appeared <strong>${count}</strong> time(s).<br><br>
+        🎶 <strong>Songs:</strong><ul>${songList}</ul>
+        ${warning}
+      `;
+      fetchArtistInfo(artist);
+    }
+    // Wikipedia helpers
+    async function fetchSummary(title) {
+      try {
+        const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`);
+        if (!res.ok) return null;
+        return await res.json();
+      } catch {
+        return null;
+      }
+    }
+
+    async function searchWikipediaTitles(query) {
+      try {
+        const url = `https://en.wikipedia.org/w/rest.php/v1/search/title?q=${encodeURIComponent(query)}&limit=10`;
+        const res = await fetch(url);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return (data.pages || []).map(p => ({ title: p.title, description: p.description }));
+      } catch {
+        return [];
+      }
+    }
+
+    // Try all variants in parallel, pick the first valid non-disambiguation
+    async function trySummaryVariants(variants) {
+      const results = await Promise.all(variants.map(name => fetchSummary(name)));
+      return results.find(data => data && data.type !== "disambiguation") || null;
+    }
+
+    function renderSummary(infoBox, data) {
+      infoBox.innerHTML = `
+        <h2>${data.title}</h2>
+        ${data.thumbnail ? `<img src="${data.thumbnail.source}" alt="${data.title}">` : ""}
+        <p>${data.extract || "No summary available."}</p>
+        ${data.content_urls?.desktop?.page ? `<a class="wiki-link" href="${data.content_urls.desktop.page}" target="_blank" rel="noopener">Read more</a>` : ""}
+      `;
+    }
+
+    // Main artist info resolver
+    async function fetchArtistInfo(artist) {
+      const infoBox = document.getElementById('artistInfo');
+      infoBox.innerHTML = "<em>Loading artist info...</em>";
+
+      // Full suffix list with plain name last
+      const variantSuffixes = [
+        " (American band)", " (British band)", " (French band)", " (band)",
+        " (musical group)", " (music group)", " (duo)", " (rock band)", " (pop band)",
+        " (hip hop group)", " (artist)", " (singer)", " (rapper)",
+        " (English band)", " (Scottish band)", " (Irish band)", " (Canadian band)", " (Australian band)",
+        "" // plain name LAST
+      ];
+      const variants = variantSuffixes.map(s => `${artist}${s}`);
+
+      const page = await trySummaryVariants(variants);
+      if (page) {
+        renderSummary(infoBox, page);
+        return;
+      }
+
+      // Fallback: search Wikipedia and prefer music-like descriptions
+      const searchResult = await searchWikipediaTitles(artist);
+      if (searchResult && searchResult.length) {
+        const musicKeywords = ["band","musical group","singer","rapper","musician","rock","pop","hip hop","electronic","metal","punk","folk","jazz"];
+        const best = searchResult.find(r => {
+          const d = (r.description || "").toLowerCase();
+          return musicKeywords.some(k => d.includes(k));
+        }) || searchResult[0];
+
+        const summary = await fetchSummary(best.title);
+        if (summary && summary.type !== "disambiguation") {
+          renderSummary(infoBox, summary);
+          return;
+        }
+
+        // Offer "Did you mean..." choices
+        infoBox.innerHTML = `
+          <h2>${artist}</h2>
+          <p>Multiple meanings found. Did you mean:</p>
+          <ul>
+            ${searchResult.slice(0, 6).map(r => `
+              <li><a href="#" data-title="${r.title}" class="wiki-link">${r.title}${r.description ? ` – ${r.description}` : ""}</a></li>
+            `).join("")}
+          </ul>
+          <p>Or try the full article: <a class="wiki-link" href="https://en.wikipedia.org/wiki/${encodeURIComponent(artist)}" target="_blank" rel="noopener">Wikipedia: ${artist}</a></p>
+        `;
+        infoBox.querySelectorAll('.wiki-link').forEach(a => {
+          a.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const chosen = a.getAttribute('data-title');
+            infoBox.innerHTML = "<em>Loading...</em>";
+            const chosenSummary = await fetchSummary(chosen);
+            if (chosenSummary && chosenSummary.type !== "disambiguation") {
+              renderSummary(infoBox, chosenSummary);
+            } else {
+              infoBox.innerHTML = `<p>No definitive artist summary for <strong>${chosen}</strong>.</p>`;
+            }
+          });
+        });
+        return;
+      }
+
+      // Final fallback
+      infoBox.innerHTML = `<p>No artist info found for <strong>${artist}</strong>.</p>`;
+    }
+  </script>
+</body>
+</html>
