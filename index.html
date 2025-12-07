@@ -80,7 +80,7 @@
 
   <div id="layout">
     <div id="container">
-      <h2>🎧 Artist Prior Appearance Lookup</h2>
+      <h2>🎧 Artist Submission Lookup</h2>
       <input type="text" id="artistInput" placeholder="Start typing an artist name..." autocomplete="off" />
       <div id="suggestions" class="suggestion-box"></div>
       <div id="result"></div>
@@ -89,12 +89,10 @@
   </div>
 
   <footer>
-    <p>Blame Rhys for this | Powered by Wikipedia | In Case of Conflict - The Spreadsheet Wins | v1.10 </p>
+    <p>Blame Rhys for this | Powered by Wikipedia | In Case of Conflict - The Spreadsheet Wins | v1.11 </p>
   </footer>
 
   <script>
-    const allowableArtistCount = 4;
-    let currentRound = 0;
 
     // Dark mode toggle
     const toggleBtn = document.getElementById('darkToggle');
@@ -105,31 +103,55 @@
       localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
     });
 
-    // Load artist data
-    async function loadArtistCounts() {
-      const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSeM1Sc2iN556e_zWnxQagRLkXSpAs8k0OyBdlay0qF1OylOOTdaNReXJVPhzkhgQ/pub?gid=42417497&single=true&output=csv";
-      const res = await fetch(csvUrl);
-      const csv = await res.text();
-      const lines = csv.split(/\r?\n/);
-      lines.shift(); // dummy
-      lines.shift(); // header
-      const artistCounts = {}, artistSongs = {};
-      lines.forEach(line => {
-        if (!line.trim()) return;
-        const cols = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(c => c.replace(/^"(.*)"$/, '$1')) || [];
-        const league = parseInt(cols[0], 10);
-        const artist = cols[1];
-        const song = cols[2];
-        if (!artist) return;
-        if (!isNaN(league) && league > currentRound) currentRound = league;
-        artistCounts[artist] = (artistCounts[artist] || 0) + 1;
-        if (!artistSongs[artist]) artistSongs[artist] = [];
-        artistSongs[artist].push({ song, league });
-      });
-      return { artistCounts, artistSongs };
-    }
-    let artistCounts = {}, artistSongs = {};
-    loadArtistCounts().then(data => { artistCounts = data.artistCounts; artistSongs = data.artistSongs; });
+   // Load artist data
+async function loadArtistCounts() {
+  const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSeM1Sc2iN556e_zWnxQagRLkXSpAs8k0OyBdlay0qF1OylOOTdaNReXJVPhzkhgQ/pub?gid=42417497&single=true&output=csv";
+  const res = await fetch(csvUrl);
+  const csv = await res.text();
+
+  // Default fallback, if cant read from AB1 of sheet.
+  let allowableArtistCount = 4;
+
+  const lines = csv.split(/\r?\n/);
+
+  // Row 1: Allowable Artist Count
+  const headerLine = lines.shift();
+  const headerCols = headerLine.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(c => c.replace(/^"(.*)"$/, '$1')) || [];
+  const parsedCount = parseInt(headerCols[1], 10);
+  if (!isNaN(parsedCount)) allowableArtistCount = parsedCount;
+
+  // Row 2: Artist data header
+  const artistHeader = lines.shift(); // optional, if you want to validate columns
+
+  // Remaining rows: actual data
+  const artistCounts = {}, artistSongs = {};
+  let currentRound = 0;
+
+  lines.forEach(line => {
+    if (!line.trim()) return;
+    const cols = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(c => c.replace(/^"(.*)"$/, '$1')) || [];
+    const league = parseInt(cols[0], 10);
+    const artist = cols[1];
+    const song = cols[2];
+    if (!artist) return;
+    if (!isNaN(league) && league > currentRound) currentRound = league;
+    artistCounts[artist] = (artistCounts[artist] || 0) + 1;
+    if (!artistSongs[artist]) artistSongs[artist] = [];
+    artistSongs[artist].push({ song, league });
+  });
+
+  return { artistCounts, artistSongs, allowableArtistCount, currentRound };
+}
+
+// Usage
+let artistCounts = {}, artistSongs = {}, allowableArtistCount = 4, currentRound = 0;
+loadArtistCounts().then(data => {
+  artistCounts = data.artistCounts;
+  artistSongs = data.artistSongs;
+  allowableArtistCount = data.allowableArtistCount;
+  currentRound = data.currentRound;
+});
+
 
     const input = document.getElementById('artistInput');
     const suggestions = document.getElementById('suggestions');
