@@ -218,6 +218,85 @@ function selectArtist(artist) {
   fetchArtistInfo(artist);
 }
 
+
+// -------------------------------
+// Search For Overused Artists
+// -------------------------------
+
+// Helper: normalize artist name for sorting
+function sortKey(artist) {
+  const lower = artist.toLowerCase();
+
+  // Special case: keep "The The" as-is
+  if (lower === "the the") {
+    return artist;
+  }
+
+  if (lower.startsWith("the ")) {
+    return artist.substring(4) + ", The";   // e.g. "Beatles, The"
+  }
+  if (lower.startsWith("thee ")) {
+    return artist.substring(5) + ", Thee";  // e.g. "Silver Mt. Zion, Thee"
+  }
+  if (lower.startsWith("a ")) {
+    return artist.substring(2) + ", A";     // e.g. "Perfect Circle, A"
+  }
+  if (lower.startsWith("an ")) {
+    return artist.substring(3) + ", An";    // e.g. "Horse, An"
+  }
+  return artist;
+}
+
+function renderFlaggedArtists() {
+  const flaggedList = document.getElementById('flagged-list');
+
+  const flaggedArtists = Object.entries(artistCounts)
+    .filter(([artist, count]) => count >= allowableArtistCount)
+    .sort((a, b) => sortKey(a[0]).localeCompare(sortKey(b[0])));
+
+  // Render the list with normalized display names
+  flaggedList.innerHTML = flaggedArtists.map(([artist, count]) => {
+    const lower = artist.toLowerCase();
+    let displayName = artist;
+
+    if (lower === "the the") {
+      displayName = artist; // keep as-is
+    } else if (lower.startsWith("the ")) {
+      displayName = artist.substring(4) + ", The";
+    } else if (lower.startsWith("thee ")) {
+      displayName = artist.substring(5) + ", Thee";
+    } else if (lower.startsWith("a ")) {
+      displayName = artist.substring(2) + ", A";
+    } else if (lower.startsWith("an ")) {
+      displayName = artist.substring(3) + ", An";
+    }
+
+    return `<li>${displayName} (${count})</li>`;
+  }).join('');
+}
+
+
+// -------------------------------
+// Toggle flagged panel visibility
+// -------------------------------
+
+const flaggedPanel = document.querySelector('.flagged-panel');
+const togglePanelButton = document.getElementById('toggleFlaggedPanel');
+
+// Load previous state
+let panelHidden = localStorage.getItem('flaggedPanelHidden') === 'true';
+flaggedPanel.style.display = panelHidden ? 'none' : 'block';
+togglePanelButton.textContent = panelHidden ? 'Show Most Submitted' : 'Hide Most Submitted';
+
+togglePanelButton.addEventListener('click', () => {
+  panelHidden = !panelHidden;
+  flaggedPanel.style.display = panelHidden ? 'none' : 'block';
+  togglePanelButton.textContent = panelHidden ? 'Show Most Submitted' : 'Hide Most Submitted';
+  localStorage.setItem('flaggedPanelHidden', panelHidden);
+});
+
+
+
 // -----------------------------
 // Wikipedia helpers (original fallbacks)
 // -----------------------------
@@ -332,4 +411,5 @@ async function fetchArtistInfo(artist) {
 (async function init() {
   await loadArtistCounts();
   await Promise.all([loadTopHits(), loadLowestMisses()]);
+  renderFlaggedArtists();
 })();
