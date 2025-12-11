@@ -1,4 +1,4 @@
-// v1.12
+// v1.14
 
 // -----------------------------
 // Dark mode toggle persistence
@@ -29,14 +29,19 @@ const lowestMissesUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSeM1Sc
 
 let artistCounts = {}, artistSongs = {}, allowableArtistCount = 4, currentRound = 0;
 let topHitsMap = new Map(), lowestMissesMap = new Map();
+let songSubmissions = [];
+let flaggedArtists = [];
+let highlightIndex = -1;
+
 
 // Normalizer for consistent matching
 function norm(str) {
   return String(str || "").trim().toLowerCase();
 }
 
+
 // -----------------------------
-// Load artist data
+// Load artist data + build songSubmissions
 // -----------------------------
 
 async function loadArtistCounts() {
@@ -69,6 +74,8 @@ async function loadArtistCounts() {
   // --- Remaining rows: submissions ---
   artistCounts = {};
   artistSongs = {};
+  songSubmissions = [];   // ✅ NEW: global array for song search
+
   let highestLeagueSeen = currentRound;
 
   lines.forEach(line => {
@@ -77,11 +84,25 @@ async function loadArtistCounts() {
     const league = parseInt(cols[0], 10);
     const artist = cols[1];
     const song = cols[2];
+
     if (!artist) return;
+
+    // Track highest league
     if (!isNaN(league) && league > highestLeagueSeen) highestLeagueSeen = league;
+
+    // Artist counts
     artistCounts[artist] = (artistCounts[artist] || 0) + 1;
+
+    // Artist → songs mapping
     if (!artistSongs[artist]) artistSongs[artist] = [];
     artistSongs[artist].push({ song, league });
+
+    // ✅ NEW: Build songSubmissions for the Song Search page
+    songSubmissions.push({
+      song,
+      artist,
+      league
+    });
   });
 
   // --- Fallback: if row 2 didn’t give us a league, use highest seen ---
@@ -91,6 +112,8 @@ async function loadArtistCounts() {
 
   console.log("Allowable artist count:", allowableArtistCount);
   console.log("Current league number:", currentRound);
+  console.log("Song submissions loaded:", songSubmissions.length);
+  return true; // ✅ signal completion
 }
 
 
@@ -158,22 +181,35 @@ const input = document.getElementById('artistInput');
 const suggestions = document.getElementById('suggestions');
 const result = document.getElementById('result');
 
-input.addEventListener('input', () => {
-  const query = input.value.toLowerCase();
-  suggestions.innerHTML = '';
-  if (!query) { suggestions.style.display = 'none'; return; }
-  const matches = Object.keys(artistCounts).filter(a => a.toLowerCase().includes(query));
-  if (matches.length > 0) {
-    suggestions.style.display = 'block';
-    matches.forEach(match => {
-      const div = document.createElement('div');
-      div.className = 'suggestion';
-      div.textContent = match;
-      div.onclick = () => selectArtist(match);
-      suggestions.appendChild(div);
-    });
-  } else { suggestions.style.display = 'none'; }
-});
+if (input && suggestions) {
+  input.addEventListener("input", () => {
+    const query = input.value.toLowerCase();
+    suggestions.innerHTML = '';
+    if (!query) {
+      suggestions.style.display = 'none';
+      return;
+    }
+
+    const matches = Object.keys(artistCounts).filter(a =>
+      a.toLowerCase().includes(query)
+    );
+
+    if (matches.length > 0) {
+      suggestions.style.display = 'block';
+      matches.forEach(match => {
+        const div = document.createElement('div');
+        div.className = 'suggestion';
+        div.textContent = match;
+        div.onclick = () => selectArtist(match);
+        suggestions.appendChild(div);
+      });
+    } else {
+      suggestions.style.display = 'none';
+    }
+  });
+}
+
+
 
 function selectArtist(artist) {
   input.value = artist;
@@ -247,20 +283,22 @@ function sortKey(artist) {
   return artist;
 }
 
-function renderFlaggedArtists() {
-  const flaggedList = document.getElementById('flagged-list');
 
-  const flaggedArtists = Object.entries(artistCounts)
+function renderFlaggedArtists() {
+  const flaggedList = document.getElementById('flaggedList');
+  if (!flaggedList) return;   // ✅ Skip on Song Lookup page
+
+  // Build flagged list fresh each time
+  const flaggedArtistsLocal = Object.entries(artistCounts)
     .filter(([artist, count]) => count >= allowableArtistCount)
     .sort((a, b) => sortKey(a[0]).localeCompare(sortKey(b[0])));
 
-  // Render the list with normalized display names
-  flaggedList.innerHTML = flaggedArtists.map(([artist, count]) => {
+  flaggedList.innerHTML = flaggedArtistsLocal.map(([artist, count]) => {
     const lower = artist.toLowerCase();
     let displayName = artist;
 
     if (lower === "the the") {
-      displayName = artist; // keep as-is
+      displayName = artist;
     } else if (lower.startsWith("the ")) {
       displayName = artist.substring(4) + ", The";
     } else if (lower.startsWith("thee ")) {
@@ -276,6 +314,7 @@ function renderFlaggedArtists() {
 }
 
 
+
 // -------------------------------
 // Toggle flagged panel visibility
 // -------------------------------
@@ -283,17 +322,20 @@ function renderFlaggedArtists() {
 const flaggedPanel = document.querySelector('.flagged-panel');
 const togglePanelButton = document.getElementById('toggleFlaggedPanel');
 
-// Load previous state
-let panelHidden = localStorage.getItem('flaggedPanelHidden') === 'true';
-flaggedPanel.style.display = panelHidden ? 'none' : 'block';
-togglePanelButton.textContent = panelHidden ? 'Show Most Submitted' : 'Hide Most Submitted';
+if (flaggedPanel && togglePanelButton) {
 
-togglePanelButton.addEventListener('click', () => {
-  panelHidden = !panelHidden;
+  // Load previous state
+  let panelHidden = localStorage.getItem('flaggedPanelHidden') === 'true';
   flaggedPanel.style.display = panelHidden ? 'none' : 'block';
   togglePanelButton.textContent = panelHidden ? 'Show Most Submitted' : 'Hide Most Submitted';
-  localStorage.setItem('flaggedPanelHidden', panelHidden);
-});
+
+  togglePanelButton.addEventListener('click', () => {
+    panelHidden = !panelHidden;
+    flaggedPanel.style.display = panelHidden ? 'none' : 'block';
+    togglePanelButton.textContent = panelHidden ? 'Show Most Submitted' : 'Hide Most Submitted';
+    localStorage.setItem('flaggedPanelHidden', panelHidden);
+  });
+}
 
 
 
@@ -408,8 +450,9 @@ async function fetchArtistInfo(artist) {
 // -----------------------------
 // Initial data load
 // -----------------------------
+
 (async function init() {
   await loadArtistCounts();
   await Promise.all([loadTopHits(), loadLowestMisses()]);
-  renderFlaggedArtists();
+  renderFlaggedArtists();   // ✅ function builds its own flagged list
 })();

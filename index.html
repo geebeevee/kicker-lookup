@@ -5,204 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Kicker's Music League</title>
 
-<style>
-  :root {
-    --bg: #f8f9fa;
-    --bg-alt: #e9ecef;
-    --text: #000;
-    --card-bg: #fff;
-    --link: #0077cc;
-    --border: #ccc;
-    --hover: #e6e6e6;
-    --shadow: rgba(0,0,0,0.1);
-    --flagged-bg: #fff3f3;
-    --flagged-border: #ff6666;
-  }
-  body.dark {
-    --bg: #121212;
-    --bg-alt: #1e1e1e;
-    --text: #f1f1f1;
-    --card-bg: #1e1e1e;
-    --link: #66b2ff;
-    --border: #333;
-    --hover: #2a2a2a;
-    --shadow: rgba(0,0,0,0.5);
-    --flagged-bg: #2a1e1e;
-    --flagged-border: #ff4444;
-  }
-
-  /* Body + footer pinned */
-  html, body {
-    height: 100%;
-    margin: 0;
-  }
-  body {
-    display: flex;
-    flex-direction: column;
-    font-family: 'Segoe UI', sans-serif;
-    background: linear-gradient(to right, var(--bg), var(--bg-alt));
-    color: var(--text);
-    transition: background 0.3s, color 0.3s;
-  }
-
-  header {
-    text-align: center;
-    margin: 20px;
-  }
-  header h1 {
-    font-size: 28px;
-    margin-bottom: 5px;
-  }
-  header p {
-    font-size: 16px;
-    opacity: 0.8;
-    margin: 0;
-  }
-
-  /* Main layout */
-  .main-container {
-    flex: 1;
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-    flex-wrap: wrap; /* natural wrapping */
-    transition: all 0.3s ease;
-    padding: 0 20px;
-  }
-
-  .left-panel, .right-panel, .flagged-panel {
-    background: var(--card-bg);
-    padding: 15px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px var(--shadow);
-    flex: 1 1 100%;   /* full width basis for natural wrapping */
-    transition: all 0.3s ease;
-  }
-
-  .left-panel { max-width: 520px; }
-  .right-panel { max-width: 380px; min-height: 180px; }
-  .flagged-panel { max-width: 320px; min-height: 180px; }
-
-  /* Flagged list styling */
-  .flagged-panel ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  .flagged-panel li {
-    background: var(--flagged-bg);
-    border: 1px solid var(--flagged-border);
-    border-radius: 6px;
-    padding: 6px 10px;
-    margin-bottom: 6px;
-    font-weight: bold;
-  }
-
-  /* Artist info image */
-  #artistInfo img {
-    max-width: 100%;
-    border-radius: 8px;
-    margin-bottom: 10px;
-  }
-
-  /* Input and results */
-  #artistInput {
-    width: 100%;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    font-size: 16px;
-    background: var(--card-bg);
-    color: var(--text);
-  }
-  #result {
-    margin-top: 15px;
-    font-size: 16px;
-    font-weight: bold;
-  }
-
-  /* Suggestions dropdown */
-  .suggestion-box {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    margin-top: 5px;
-    max-height: 200px;
-    overflow-y: auto;
-    display: none;
-    position: absolute;
-    width: 93%;
-    z-index: 1000;
-  }
-  .suggestion {
-    padding: 8px;
-    cursor: pointer;
-  }
-  .suggestion:hover {
-    background: var(--hover);
-  }
-
-  /* Links */
-  .wiki-link {
-    color: var(--link);
-    text-decoration: none;
-  }
-  .wiki-link:hover {
-    text-decoration: underline;
-  }
-
-  .hit, .miss {
-    color: red;
-    font-weight: bold;
-  }
-
-  /* Footer pinned at bottom */
-  footer {
-    text-align: center;
-    margin: 20px;
-    font-size: 12px;
-    opacity: 0.7;
-  }
-  footer button {
-    margin: 10px 5px;
-    padding: 6px 12px;
-    border: none;
-    border-radius: 6px;
-    background: var(--link);
-    color: #fff;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background 0.2s;
-  }
-  footer button:hover {
-    background: var(--hover);
-    color: var(--text);
-  }
-
-  /* Mobile layout */
-  @media (max-width: 600px) {
-    .main-container {
-      flex-direction: column;
-    }
-    .left-panel,
-    .right-panel,
-    .flagged-panel {
-      flex: 1 1 auto;   /* override flex basis */
-      max-width: 100%;  /* force full width */
-      width: 100%;      /* ensure they span container */
-    }
-    header h1 {
-      font-size: 22px;
-    }
-    #artistInput {
-      font-size: 14px;
-    }
-    #result {
-      font-size: 14px;
-    }
-  }
-</style>
-
+<link rel="stylesheet" href="styles.css">
 
 
 </head>
@@ -210,13 +13,15 @@
   <header>
     <h1>Kicker's Music League</h1>
     <p>The spreadsheet must be obeyed.......</p>
+<button onclick="location.href='songs.html'" class="switch-button">🔄Switch to Song Search🔄</button>
+
   </header>
 
 
 <div class="main-container">
   <div class="left-panel">
     <!-- Artist Lookup -->
-      <h2>🎧 Artist Lookup</h2>
+      <h2>🎧 Artist Search</h2>
       <input type="text" id="artistInput" placeholder="Start typing an artist name..." autocomplete="off" />
       <div id="suggestions" class="suggestion-box"></div>
       <div id="result"></div>
@@ -231,7 +36,7 @@
 <div class="flagged-panel">
   <h2>🚨 Most Submitted Artists</h2>
 
-  <ul id="flagged-list"></ul>
+  <ul id="flaggedList"></ul>
 </div>
   </div>
 
@@ -239,7 +44,7 @@
   <footer>
     <button id="toggleFlaggedPanel">Most Submitted Toggle</button>
     <button id="darkToggle">Dark Mode Toggle</button>
-    <p>blame Rhys for this | powered by Wikipedia | in case of conflict - the spreadsheet wins | v1.13 </p>
+    <p>blame Rhys for this | powered by Wikipedia | in case of conflict - the spreadsheet wins | v1.14 </p>
   </footer>
 
   <script src="script.js"></script>
