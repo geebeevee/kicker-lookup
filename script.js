@@ -1,4 +1,4 @@
-// v1.14
+// v1.14 - tsv version
 
 // -----------------------------
 // Dark mode toggle persistence
@@ -16,16 +16,16 @@ toggleBtn.addEventListener('click', () => {
 // -----------------------------------
 
 // Prod Links
-const artistCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSeM1Sc2iN556e_zWnxQagRLkXSpAs8k0OyBdlay0qF1OylOOTdaNReXJVPhzkhgQ/pub?gid=42417497&single=true&output=csv";   // Prod Submissions
-const topHitsUrl   = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSeM1Sc2iN556e_zWnxQagRLkXSpAs8k0OyBdlay0qF1OylOOTdaNReXJVPhzkhgQ/pub?gid=1916696459&single=true&output=csv";      // Prod Hits
-const lowestMissesUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSeM1Sc2iN556e_zWnxQagRLkXSpAs8k0OyBdlay0qF1OylOOTdaNReXJVPhzkhgQ/pub?gid=1666455778&single=true&output=csv";  // Low Misses
+const artisttsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSeM1Sc2iN556e_zWnxQagRLkXSpAs8k0OyBdlay0qF1OylOOTdaNReXJVPhzkhgQ/pub?gid=42417497&single=true&output=tsv";   // Prod Submissions
+const topHitsUrl   = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSeM1Sc2iN556e_zWnxQagRLkXSpAs8k0OyBdlay0qF1OylOOTdaNReXJVPhzkhgQ/pub?gid=1916696459&single=true&output=tsv";      // Prod Hits
+const lowestMissesUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSeM1Sc2iN556e_zWnxQagRLkXSpAs8k0OyBdlay0qF1OylOOTdaNReXJVPhzkhgQ/pub?gid=1666455778&single=true&output=tsv";  // Low Misses
 
 
 
 // Testing Links
-// const artistCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQG9L-FXugJcPmIuC4UHMajvGaZOG7JV42k6xNuu3sysNghVJSyXnoOPm81WD5aMg/pub?gid=42417497&single=true&output=csv";   // testingURL
-// const topHitsUrl   = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQG9L-FXugJcPmIuC4UHMajvGaZOG7JV42k6xNuu3sysNghVJSyXnoOPm81WD5aMg/pub?gid=1916696459&single=true&output=csv";      // testingURL
-// const lowestMissesUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQG9L-FXugJcPmIuC4UHMajvGaZOG7JV42k6xNuu3sysNghVJSyXnoOPm81WD5aMg/pub?gid=1666455778&single=true&output=csv";  // testingURL
+// const artisttsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQG9L-FXugJcPmIuC4UHMajvGaZOG7JV42k6xNuu3sysNghVJSyXnoOPm81WD5aMg/pub?gid=42417497&single=true&output=tsv";   // testingURL
+// const topHitsUrl   = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQG9L-FXugJcPmIuC4UHMajvGaZOG7JV42k6xNuu3sysNghVJSyXnoOPm81WD5aMg/pub?gid=1916696459&single=true&output=tsv";      // testingURL
+// const lowestMissesUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQG9L-FXugJcPmIuC4UHMajvGaZOG7JV42k6xNuu3sysNghVJSyXnoOPm81WD5aMg/pub?gid=1666455778&single=true&output=tsv";  // testingURL
 
 let artistCounts = {}, artistSongs = {}, allowableArtistCount = 4, currentRound = 0;
 let topHitsMap = new Map(), lowestMissesMap = new Map();
@@ -39,48 +39,40 @@ function norm(str) {
   return String(str || "").trim().toLowerCase();
 }
 
-
 // -----------------------------
-// Load artist data + build songSubmissions
+// Load artist data + build songSubmissions (TSV version)
 // -----------------------------
-
 async function loadArtistCounts() {
-  const res = await fetch(artistCsvUrl);
-  const csv = await res.text();
-  const lines = csv.split(/\r?\n/);
+  // ✅ Make sure your URL ends with output=tsv
+  const res = await fetch(artisttsvUrl);
+  const tsv = await res.text();
+  const lines = tsv.split(/\r?\n/);
 
   // --- Row 1: Allowable Artist Count ---
   let headerLine = lines.shift() || "";
-  const headerCols = headerLine.split(",").map(c => c.replace(/^"(.*)"$/, "$1").trim());
+  const headerCols = headerLine.split("\t").map(c => c.trim());
   const lastCell = headerCols[headerCols.length - 1];
   const parsedCount = parseInt(lastCell, 10);
-  if (Number.isFinite(parsedCount) && parsedCount > 0) {
-    allowableArtistCount = parsedCount;
-  } else {
-    allowableArtistCount = 4; // fallback
-  }
+  allowableArtistCount = Number.isFinite(parsedCount) && parsedCount > 0 ? parsedCount : 4;
 
-  // --- Row 2: Artist data header, try to detect current league ---
+  // --- Row 2: Artist data header, detect current league ---
   const headerLine2 = lines.shift() || "";
-  const cols2 = headerLine2.split(",").map(c => c.replace(/^"(.*)"$/, "$1").trim());
+  const cols2 = headerLine2.split("\t").map(c => c.trim());
   const leagueLabel = [...cols2].reverse().find(c => c.toUpperCase().startsWith("LEAGUE"));
   const leagueMatch = leagueLabel?.match(/LEAGUE\s*(\d+)/i);
-  if (leagueMatch) {
-    currentRound = parseInt(leagueMatch[1], 10);
-  } else {
-    currentRound = 1; // provisional, will update from submissions below
-  }
+  currentRound = leagueMatch ? parseInt(leagueMatch[1], 10) : 1;
 
   // --- Remaining rows: submissions ---
   artistCounts = {};
   artistSongs = {};
-  songSubmissions = [];   // ✅ NEW: global array for song search
+  songSubmissions = [];
 
   let highestLeagueSeen = currentRound;
 
   lines.forEach(line => {
     if (!line.trim()) return;
-    const cols = line.split(",").map(c => c.replace(/^"(.*)"$/, "$1").trim());
+
+    const cols = line.split("\t").map(c => c.trim());
     const league = parseInt(cols[0], 10);
     const artist = cols[1];
     const song = cols[2];
@@ -97,7 +89,7 @@ async function loadArtistCounts() {
     if (!artistSongs[artist]) artistSongs[artist] = [];
     artistSongs[artist].push({ song, league });
 
-    // ✅ NEW: Build songSubmissions for the Song Search page
+    // Song search data
     songSubmissions.push({
       song,
       artist,
@@ -105,7 +97,7 @@ async function loadArtistCounts() {
     });
   });
 
-  // --- Fallback: if row 2 didn’t give us a league, use highest seen ---
+  // --- Fallback if header didn't give league ---
   if (!Number.isFinite(currentRound) || currentRound <= 0) {
     currentRound = highestLeagueSeen;
   }
@@ -113,62 +105,72 @@ async function loadArtistCounts() {
   console.log("Allowable artist count:", allowableArtistCount);
   console.log("Current league number:", currentRound);
   console.log("Song submissions loaded:", songSubmissions.length);
-  return true; // ✅ signal completion
+  return true;
 }
 
 
 
 // -----------------------------
-// Load Top Hits (skip first row + headers; A=Artist, B=Song)
+// Load Top Hits (TSV version)
 // -----------------------------
 async function loadTopHits() {
   try {
     const res = await fetch(topHitsUrl);
-    const csv = await res.text();
-    const lines = csv.split(/\r?\n/);
+    const tsv = await res.text();
+    const lines = tsv.split(/\r?\n/);
 
     lines.shift(); // skip row 1
     lines.shift(); // skip headers row
 
     topHitsMap = new Map();
+
     lines.forEach(line => {
       if (!line.trim()) return;
-      const cols = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(c => c.replace(/^"(.*)"$/, '$1')) || [];
+
+      const cols = line.split("\t").map(c => c.trim());
       const artist = norm(cols[0]);
       const song = norm(cols[1]);
+
       if (artist && song) {
         if (!topHitsMap.has(artist)) topHitsMap.set(artist, []);
         topHitsMap.get(artist).push(song);
       }
     });
+
   } catch {
     topHitsMap = new Map();
   }
 }
 
+
+
 // -----------------------------
-// Load Lowest Misses (same format)
+// Load Lowest Misses (TSV version)
 // -----------------------------
 async function loadLowestMisses() {
   try {
     const res = await fetch(lowestMissesUrl);
-    const csv = await res.text();
-    const lines = csv.split(/\r?\n/);
+    const tsv = await res.text();
+    const lines = tsv.split(/\r?\n/);
 
     lines.shift(); // skip row 1
     lines.shift(); // skip headers row
 
     lowestMissesMap = new Map();
+
     lines.forEach(line => {
       if (!line.trim()) return;
-      const cols = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)?.map(c => c.replace(/^"(.*)"$/, '$1')) || [];
+
+      const cols = line.split("\t").map(c => c.trim());
       const artist = norm(cols[0]);
       const song = norm(cols[1]);
+
       if (artist && song) {
         if (!lowestMissesMap.has(artist)) lowestMissesMap.set(artist, []);
         lowestMissesMap.get(artist).push(song);
       }
     });
+
   } catch {
     lowestMissesMap = new Map();
   }
