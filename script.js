@@ -582,6 +582,21 @@ if (/^[a-zA-Z]+$/.test(artist) && artist.split(" ").length === 1) {
   }
 }
 
+  // Direct "(musician)" lookup for single-word artist names
+if (/^[a-zA-Z]+$/.test(artist) && artist.split(" ").length === 1) {
+  const cleanArtist = artist.trim();
+  const musicianTitle =
+    `${cleanArtist.charAt(0).toUpperCase() + cleanArtist.slice(1)} (musician)`;
+
+  const musicianSummary = await fetchSummary(musicianTitle);
+
+  if (musicianSummary && musicianSummary.type !== "disambiguation") {
+    renderSummary(infoBox, musicianSummary);
+    return;
+  }
+}
+
+
 
 
   // Variant suffixes for direct lookup
