@@ -228,7 +228,9 @@ function selectArtist(artist) {
   
   // ✅ Build song list WITH Discogs icon at the start
 const songList = sortedSongs.map(s => {
-  const discogsUrl = `https://www.discogs.com/search/?q=${encodeURIComponent(artist + " " + s.song)}&type=release`;
+  const quoted = `"${artist}" "${s.song}"`;
+  const discogsUrl = `https://www.discogs.com/search/?q=${encodeURIComponent(quoted)}&type=release`;
+
   return `
     <li style="list-style: none; display: flex; align-items: center; gap: 6px;">
       <a href="${discogsUrl}" target="_blank" rel="noopener noreferrer" title="Search Discogs for this track">💿</a>
@@ -236,6 +238,7 @@ const songList = sortedSongs.map(s => {
     </li>
   `;
 }).join("");
+
 
 
 
