@@ -266,11 +266,21 @@ return `
   }
 
   // Final output
-  result.innerHTML = `
-    🎤 <strong>${artist}</strong> has appeared <strong>${count}</strong> time(s).${extraInfo}<br><br>
-    🎶 <strong>Songs:</strong><ul>${songList}</ul>
-    ${warning}
-  `;
+const quotedArtist = `"${artist}"`;
+const artistDiscogsUrl = `https://www.discogs.com/search/?q=${encodeURIComponent(quotedArtist)}&type=artist`;
+
+result.innerHTML = `
+  <a class="discogs-artist-icon" 
+     href="${artistDiscogsUrl}" 
+     target="_blank" 
+     rel="noopener noreferrer" 
+     title="Search Discogs for this artist">🎤</a>
+  <strong>${artist}</strong>
+  has appeared <strong>${count}</strong> time(s).${extraInfo}<br><br>
+
+  🎶 <strong>Songs:</strong><ul>${songList}</ul>
+  ${warning}
+`;
   fetchArtistInfo(artist);
 }
 
