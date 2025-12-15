@@ -270,7 +270,7 @@ const quotedArtist = `"${artist}"`;
 const artistDiscogsUrl = `https://www.discogs.com/search/?q=${encodeURIComponent(quotedArtist)}&type=artist`;
 
 result.innerHTML = `
-  <a class="discogs-artist-icon" 
+  <a class="discogs-icon-link" 
      href="${artistDiscogsUrl}" 
      target="_blank" 
      rel="noopener noreferrer" 
