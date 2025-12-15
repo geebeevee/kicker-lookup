@@ -132,6 +132,11 @@ header a:hover {
   font-weight: bold;
 }
 
+.discogs-icon-link {
+  text-decoration: none;
+}
+
+
 /* Suggestions dropdown */
 .suggestion-box {
   background: var(--card-bg);
@@ -243,6 +248,7 @@ footer button:hover {
     font-size: 14px;
   }
 }
+
 
 
 
