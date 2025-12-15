@@ -231,12 +231,13 @@ const songList = sortedSongs.map(s => {
   const quoted = `"${artist}" "${s.song}"`;
   const discogsUrl = `https://www.discogs.com/search/?q=${encodeURIComponent(quoted)}&type=release`;
 
-  return `
-    <li style="list-style: none; display: flex; align-items: center; gap: 6px;">
-      <a href="${discogsUrl}" target="_blank" rel="noopener noreferrer" title="Search Discogs for this track">💿</a>
-      ${s.song} (League ${s.league})
-    </li>
-  `;
+return `
+  <li style="list-style: none; display: flex; align-items: center; gap: 6px;">
+    <a class="discogs-icon-link" href="${discogsUrl}" target="_blank" rel="noopener noreferrer" title="Search Discogs for this track">💿</a>
+    ${s.song} (League ${s.league})
+  </li>
+`;
+  
 }).join("");
 
 
