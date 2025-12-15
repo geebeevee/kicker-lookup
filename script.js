@@ -223,7 +223,19 @@ function selectArtist(artist) {
   const sortedSongs = songs.slice().sort((a, b) => a.league - b.league);
 
   // Build plain song list
-  const songList = sortedSongs.map(s => `<li>${s.song} (League ${s.league})</li>`).join("");
+  // const songList = sortedSongs.map(s => `<li>${s.song} (League ${s.league})</li>`).join("");
+
+    // ✅ Build song list WITH Discogs icon
+  const songList = sortedSongs.map(s => {
+    const discogsUrl = `https://www.discogs.com/search/?q=${encodeURIComponent(artist + " " + s.song)}&type=release`;
+    return `
+      <li>
+        ${s.song} (League ${s.league})
+        <a href="${discogsUrl}" target="_blank" rel="noopener noreferrer" title="Search Discogs for this track">💿</a>
+      </li>
+    `;
+  }).join("");
+
 
   // Count hits and misses (per artist only)
   const artistKey = norm(artist);
