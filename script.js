@@ -280,7 +280,8 @@ result.innerHTML = `
 
   🎶 <strong>Songs:</strong><ul>${songList}</ul>
 
-  <small style="opacity:0.7;">For Discogs link to the artist/song – click the Mic or Disc icon above.</small><br><br>
+<small class="discogs-helper">For Discogs link to the artist/song – click the microphone or disc icons above.</small>
+
   
   ${warning}
 `;
