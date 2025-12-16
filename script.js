@@ -279,6 +279,9 @@ result.innerHTML = `
   has appeared <strong>${count}</strong> time(s).${extraInfo}<br><br>
 
   🎶 <strong>Songs:</strong><ul>${songList}</ul>
+
+  <small style="opacity:0.7;">For Discogs link to the artist/song – click the Mic or Disc icon above.</small><br><br>
+  
   ${warning}
 `;
   fetchArtistInfo(artist);
