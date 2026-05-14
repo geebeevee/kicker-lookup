@@ -1,4 +1,4 @@
-// v1.15
+// v1.15b
 
 // -----------------------------
 // Dark mode toggle persistence
@@ -72,28 +72,31 @@ async function loadArtistCounts() {
   lines.forEach(line => {
     if (!line.trim()) return;
 
-    const cols = line.split("\t").map(c => c.trim());
-    const league = parseInt(cols[0], 10);
+	const cols = line.split("\t").map(c => c.trim());
+    const leagueRaw = cols[0]; // Capture "12B" as a string
+    const leagueNum = parseInt(leagueRaw, 10); // Extract number (12) for math
     const artist = cols[1];
     const song = cols[2];
 
     if (!artist) return;
 
-    // Track highest league
-    if (!isNaN(league) && league > highestLeagueSeen) highestLeagueSeen = league;
+    // Track highest numeric league for current league logic [cite: 16]
+    if (!isNaN(leagueNum) && leagueNum > highestLeagueSeen) {
+      highestLeagueSeen = leagueNum;
+    }
 
     // Artist counts
     artistCounts[artist] = (artistCounts[artist] || 0) + 1;
 
-    // Artist → songs mapping
+    // Artist → songs mapping: Store the raw string (e.g., "12B") [cite: 17]
     if (!artistSongs[artist]) artistSongs[artist] = [];
-    artistSongs[artist].push({ song, league });
+    artistSongs[artist].push({ song, league: leagueRaw });
 
-    // Song search data
+    // Song search data: Store the raw string [cite: 17]
     songSubmissions.push({
       song,
       artist,
-      league
+      league: leagueRaw
     });
   });
 
@@ -219,8 +222,11 @@ function selectArtist(artist) {
   const count = artistCounts[artist] || 0;
   const songs = artistSongs[artist] || [];
 
-  // Sort by league ascending
-  const sortedSongs = songs.slice().sort((a, b) => a.league - b.league);
+
+  // ✅ New robust sorting for alphanumeric leagues (e.g., 12, 12B, 13)
+  const sortedSongs = songs.slice().sort((a, b) => String(a.league).localeCompare(String(b.league), undefined, { numeric: true })
+  );
+  
 
   // Build plain song list
   // const songList = sortedSongs.map(s => `<li>${s.song} (League ${s.league})</li>`).join("");
@@ -261,30 +267,17 @@ return `
   let warning = "";
   if (count >= allowableArtistCount) {
     warning = `<p style="color:red"><strong>Don't Submit This Artist – too many submissions</strong></p>`;
-  } else if (sortedSongs.some(s => s.league === currentleague)) {
+  } else if (sortedSongs.some(s => String(s.league) === String(currentleague))) {
+    // Exact match only (e.g., "12" does not match "12B")
     warning = `<p style="color:red"><strong>Don't Submit This Artist – has been played this league</strong></p>`;
   }
 
   // Final output
-const quotedArtist = `"${artist}"`;
-const artistDiscogsUrl = `https://www.discogs.com/search/?q=${encodeURIComponent(quotedArtist)}&type=artist`;
-
-result.innerHTML = `
-  <a class="discogs-icon-link" 
-     href="${artistDiscogsUrl}" 
-     target="_blank" 
-     rel="noopener noreferrer" 
-     title="Search Discogs for this artist">🎤</a>
-  <strong>${artist}</strong>
-  has appeared <strong>${count}</strong> time(s).${extraInfo}<br><br>
-
-  🎶 <strong>Songs:</strong><ul>${songList}</ul>
-
-<small class="discogs-helper">For Discogs link to the artist/song – click the microphone or disc icons above.</small>
-
-  
-  ${warning}
-`;
+  result.innerHTML = `
+    🎤 <strong>${artist}</strong> has appeared <strong>${count}</strong> time(s).${extraInfo}<br><br>
+    🎶 <strong>Songs:</strong><ul>${songList}</ul>
+    ${warning}
+  `;
   fetchArtistInfo(artist);
 }
 

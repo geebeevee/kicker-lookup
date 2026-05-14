@@ -1,4 +1,4 @@
-// v1.15
+// v1.15b
 
 // -----------------------------
 // Song Search Logic
@@ -151,6 +151,8 @@ function showSongResults(songName) {
     return;
   }
 
+  // The (League ${s.league}) part will now automatically show "12B"
+  // because s.league is now a string from our previous changes.
   songResults.innerHTML = matches
     .map(s => `<p>${s.artist} - ${s.song} (League ${s.league})</p>`)
     .join("");
