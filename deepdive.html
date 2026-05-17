@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Archive Deep Dive – Kicker's Music League</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <style>
+    .dd-container { max-width: 960px; margin: 0 auto; padding: 0 20px 40px; width: 100%; box-sizing: border-box; }
+    .dd-data-note { font-size: 12px; opacity: 0.55; margin: 4px 0 0; font-style: italic; }
+    .dd-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 24px; border-bottom: 2px solid var(--border); }
+    .dd-tab { padding: 8px 14px; border: 1px solid var(--border); border-bottom: none; border-radius: 8px 8px 0 0; background: var(--bg-alt); color: var(--text); cursor: pointer; font-size: 13px; font-weight: 600; transition: background 0.15s; position: relative; bottom: -2px; }
+    .dd-tab:hover { background: var(--hover); }
+    .dd-tab.active { background: var(--card-bg); border-bottom: 2px solid var(--card-bg); color: var(--link); }
+    .dd-panel { display: none; } .dd-panel.active { display: block; }
+    .dd-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; box-shadow: 0 2px 8px var(--shadow); }
+    .dd-card h3 { margin: 0 0 6px; font-size: 17px; } .dd-card h4 { margin: 0 0 4px; font-size: 15px; } .dd-card p { margin: 4px 0; font-size: 14px; opacity: 0.85; }
+    .dd-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+    .dd-select, .dd-input { padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text); font-size: 15px; flex: 1; min-width: 160px; }
+    .dd-select:focus, .dd-input:focus { outline: 2px solid var(--link); }
+    .round-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .round-row:last-child { border-bottom: none; }
+    .round-num { font-size: 12px; opacity: 0.5; min-width: 24px; } .round-name { font-weight: 600; font-size: 15px; flex: 1; } .round-desc { font-size: 13px; opacity: 0.7; flex: 2; font-style: italic; } .round-winner { font-size: 12px; background: var(--bg-alt); border-radius: 20px; padding: 3px 10px; white-space: nowrap; }
+    /* Accordion scoreboard */
+    .round-header { cursor: pointer; user-select: none; }
+    .round-header:hover .round-name { text-decoration: underline; color: var(--link); }
+    .round-scoreboard { display: none; background: var(--bg-alt); border-radius: 8px; padding: 10px 14px; margin: 6px 0 10px; }
+    .round-scoreboard.open { display: block; }
+    .sb-row { display: flex; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .sb-row:last-child { border-bottom: none; }
+    .sb-pos { min-width: 24px; font-weight: 700; opacity: .4; font-size: 12px; }
+    .sb-title { flex: 3; }
+    .sb-artist { flex: 2; opacity: .65; }
+    .sb-submitter { flex: 2; opacity: .65; }
+    .sb-pts { min-width: 60px; text-align: right; font-weight: 700; }
+    .hof-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .hof-table th { text-align: left; padding: 8px 10px; border-bottom: 2px solid var(--border); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.6; }
+    .hof-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .hof-table tr:last-child td { border-bottom: none; } .hof-table tr:hover td { background: var(--hover); }
+    .hof-rank { font-weight: 700; font-size: 16px; opacity: 0.35; width: 32px; }
+    .medal-1 { color: #f5a623; } .medal-2 { color: #9b9b9b; } .medal-3 { color: #c8794a; }
+    .score-pill { display: inline-block; padding: 2px 9px; border-radius: 12px; font-weight: 700; font-size: 13px; }
+    .score-high { background: #d4edda; color: #155724; } .score-low { background: #f8d7da; color: #721c24; } .score-mid { background: var(--bg-alt); color: var(--text); }
+    body.dark .score-high { background: #1a3d27; color: #7ed9a0; } body.dark .score-low { background: #3d1a1e; color: #f08090; }
+    .suggestion-wrap { position: relative; flex: 1; }
+    .dd-suggest-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; margin-top: 4px; max-height: 220px; overflow-y: auto; display: none; position: absolute; width: 100%; z-index: 1000; box-shadow: 0 4px 12px var(--shadow); }
+    .dd-suggest-item { padding: 9px 12px; cursor: pointer; font-size: 14px; }
+    .dd-suggest-item:hover { background: var(--hover); }
+    .vote-comment { font-size: 13px; opacity: 0.75; font-style: italic; margin-top: 3px; }
+    .vote-pts-pos { color: #22863a; font-weight: 700; } .vote-pts-neg { color: #cb2431; font-weight: 700; } .vote-pts-zer { opacity: 0.5; font-weight: 600; }
+    body.dark .vote-pts-pos { color: #7ed9a0; } body.dark .vote-pts-neg { color: #f08090; }
+    .stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+    .stat-box { background: var(--bg-alt); border-radius: 8px; padding: 10px 16px; flex: 1; min-width: 90px; text-align: center; }
+    .stat-box .stat-val { font-size: 22px; font-weight: 700; } .stat-box .stat-lbl { font-size: 11px; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.05em; }
+    .dd-loading { opacity: 0.6; font-style: italic; padding: 20px 0; } .dd-empty { opacity: 0.5; padding: 20px 0; font-size: 14px; }
+    a.playlist-link { color: #1db954; text-decoration: none; font-weight: 600; } a.playlist-link:hover { text-decoration: underline; }
+    .dd-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; margin: 22px 0 10px; }
+    .member-league-header { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.45; padding: 14px 0 6px; border-top: 1px solid var(--border); margin-top: 8px; }
+    .member-league-header:first-of-type { border-top: none; margin-top: 0; }
+    .alias-badge { display: inline-block; font-size: 11px; background: #fff3cd; color: #856404; border-radius: 4px; padding: 1px 7px; margin-left: 6px; }
+    body.dark .alias-badge { background: #3d3000; color: #ffd966; }
+    .h2h-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    @media (max-width: 600px) { .h2h-grid { grid-template-columns: 1fr; } }
+    .h2h-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+    .h2h-card h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; opacity: .5; }
+    .h2h-avg { font-size: 32px; font-weight: 800; }
+    .h2h-avg.pos { color: #22863a; } .h2h-avg.neg { color: #cb2431; } .h2h-avg.neu { opacity: .5; }
+    body.dark .h2h-avg.pos { color: #7ed9a0; } body.dark .h2h-avg.neg { color: #f08090; }
+    .art-bar-wrap { height: 6px; background: var(--bg-alt); border-radius: 3px; margin-top: 4px; }
+    .art-bar { height: 6px; background: var(--link); border-radius: 3px; }
+    .timeline-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .timeline-row:last-child { border-bottom: none; }
+    .tl-league { min-width: 52px; font-weight: 700; opacity: .5; font-size: 12px; }
+    .tl-title { flex: 3; }
+    .tl-pts { min-width: 60px; text-align: right; font-weight: 700; }
+    .tl-bar-wrap { flex: 2; height: 8px; background: var(--bg-alt); border-radius: 4px; overflow: hidden; }
+    .tl-bar-pos { height: 8px; background: #22863a; border-radius: 4px; }
+    .tl-bar-neg { height: 8px; background: #cb2431; border-radius: 4px; }
+    body.dark .tl-bar-pos { background: #7ed9a0; } body.dark .tl-bar-neg { background: #f08090; }
+    /* Member stats grid */
+    .member-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+    @media (max-width: 640px) { .member-stats-grid { grid-template-columns: 1fr; } }
+    .ms-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+    .ms-card h4 { margin: 0 0 10px; font-size: 13px; }
+    .ms-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 13px; gap: 8px; }
+    .ms-row:last-child { border-bottom: none; }
+    .ms-name { flex: 1; font-weight: 600; }
+    .ms-detail { opacity: .6; font-size: 12px; text-align: right; }
+
+    /* Rounds grid — fixed column layout */
+    .rounds-grid-header, .rounds-grid-row {
+      display: grid;
+      grid-template-columns: 32px 160px 1fr 1fr 100px;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 4px;
+      border-bottom: 1px solid var(--border);
+    }
+    .rounds-grid-header {
+      font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+      opacity: .45; padding-bottom: 6px; font-weight: 700;
+    }
+    .rounds-grid-row { cursor: pointer; }
+    .rounds-grid-row:hover .rg-name { color: var(--link); text-decoration: underline; }
+    .rounds-grid-row:last-of-type { border-bottom: none; }
+    .rg-num  { font-size: 12px; opacity: .5; }
+    .rg-name { font-weight: 700; font-size: 14px; }
+    .rg-arrow { font-size: 10px; opacity: .4; }
+    .rg-desc { font-size: 13px; opacity: .7; font-style: italic; }
+    .rg-winner { font-size: 12px; }
+    .rg-link { font-size: 13px; text-align: right; }
+    .round-scoreboard { display: none; background: var(--bg-alt); border-radius: 8px; padding: 10px 14px; margin: 4px 0 10px; }
+    .round-scoreboard.open { display: block; }
+    .sb-pos { min-width: 24px; font-weight: 700; opacity: .4; font-size: 12px; }
+    /* Member stats grid */
+    .member-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+    @media (max-width: 640px) { .member-stats-grid { grid-template-columns: 1fr; } .rounds-grid-header, .rounds-grid-row { grid-template-columns: 24px 1fr 80px; } .rg-desc, .rg-winner { display: none; } }
+    .ms-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+    .ms-card h4 { margin: 0 0 10px; font-size: 13px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>📼 Archive Deep Dive</h1>
+  <p>Kicker's Music League — all the data, all the history</p>
+  <p class="dd-data-note" id="dataNote">Loading data…</p>
+  <div style="margin-top:10px; display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+    <button onclick="location.href='index.html'" class="switch-button">🎧 Artist Search</button>
+    <button onclick="location.href='songs.html'" class="switch-button">🎵 Song Search</button>
+  </div>
+</header>
+
+<div class="dd-container">
+  <div class="dd-tabs">
+    <button class="dd-tab active" data-tab="league">🏆 League Summary</button>
+    <button class="dd-tab" data-tab="member">👤 Member Profile</button>
+    <button class="dd-tab" data-tab="hof">🌟 Hall of Fame</button>
+    <button class="dd-tab" data-tab="h2h">⚔️ Head-to-Head</button>
+    <button class="dd-tab" data-tab="artists">🎸 Artist Stats</button>
+  </div>
+
+  <div class="dd-panel active" id="panel-league">
+    <div class="dd-controls">
+      <select class="dd-select" id="leagueSelect"><option value="">— Select a league —</option></select>
+    </div>
+    <div id="leagueContent"><p class="dd-empty">Select a league above to see its rounds and results.</p></div>
+  </div>
+
+  <div class="dd-panel" id="panel-member">
+    <div class="dd-controls">
+      <div class="suggestion-wrap">
+        <input class="dd-input" id="memberInput" placeholder="Start typing a member name…" autocomplete="off" />
+        <div class="dd-suggest-box" id="memberSuggestions"></div>
+      </div>
+    </div>
+    <div id="memberContent"><p class="dd-empty">Search for a league member above.</p></div>
+  </div>
+
+  <div class="dd-panel" id="panel-hof">
+    <p class="dd-loading" id="hofLoading">Loading archive data…</p>
+    <div id="hofContent" style="display:none;"></div>
+  </div>
+
+  <div class="dd-panel" id="panel-h2h">
+    <div class="dd-controls">
+      <div class="suggestion-wrap">
+        <input class="dd-input" id="h2hInput1" placeholder="Member A…" autocomplete="off" />
+        <div class="dd-suggest-box" id="h2hSuggest1"></div>
+      </div>
+      <span style="align-self:center; font-weight:700; opacity:.5; flex:0;">vs</span>
+      <div class="suggestion-wrap">
+        <input class="dd-input" id="h2hInput2" placeholder="Member B…" autocomplete="off" />
+        <div class="dd-suggest-box" id="h2hSuggest2"></div>
+      </div>
+    </div>
+    <div id="h2hContent"><p class="dd-empty">Pick two members above to see how they voted on each other's songs.</p></div>
+  </div>
+
+  <div class="dd-panel" id="panel-artists">
+    <p class="dd-loading" id="artistsLoading">Loading artist data…</p>
+    <div id="artistsContent" style="display:none;"></div>
+  </div>
+</div>
+
+<footer>
+  <button id="darkToggle">Dark Mode Toggle</button>
+  <p>blame Rhys for this | in case of conflict - the spreadsheet wins | v1.18</p>
+</footer>
+<script src="deepdive.js"></script>
+</body>
+</html>

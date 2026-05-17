@@ -1,4 +1,4 @@
-// v1.15b
+// v1.18
 
 // -----------------------------
 // Dark mode toggle persistence
@@ -228,24 +228,23 @@ function selectArtist(artist) {
   );
   
 
-  // Build plain song list
-  // const songList = sortedSongs.map(s => `<li>${s.song} (League ${s.league})</li>`).join("");
-
-  
-  // ✅ Build song list WITH Discogs icon at the start
-const songList = sortedSongs.map(s => {
-  const quoted = `"${artist}" "${s.song}"`;
-  const discogsUrl = `https://www.discogs.com/search/?q=${encodeURIComponent(quoted)}&type=release`;
-
-return `
-  <li style="list-style: none; display: flex; align-items: center; gap: 6px;">
-    <a class="discogs-icon-link" href="${discogsUrl}" target="_blank" rel="noopener noreferrer" title="Search Discogs for this track">💿</a>
-    ${s.song} (League ${s.league})
-  </li>
-`;
-  
-}).join("");
-
+  // Build song table with Song, League, Discogs columns
+  const songTable = `
+    <table class="song-table" style="margin-top:8px;">
+      <thead><tr><th>Song</th><th>League</th><th>Discogs</th></tr></thead>
+      <tbody>
+        ${sortedSongs.map(s => {
+          const quoted = '"' + artist + '" "' + s.song + '"';
+          const discogsUrl = 'https://www.discogs.com/search/?q=' + encodeURIComponent(quoted) + '&type=release';
+          const summaryParams = new URLSearchParams({ song: s.song, artist: artist, league: s.league });
+          return '<tr>' +
+            '<td><a href="summary.html?' + summaryParams.toString() + '" class="summary-link">' + s.song + '</a></td>' +
+            '<td>' + s.league + '</td>' +
+            '<td><a class="discogs-icon-link" href="' + discogsUrl + '" target="_blank" rel="noopener noreferrer" title="Search Discogs">💿</a></td>' +
+            '</tr>';
+        }).join('')}
+      </tbody>
+    </table>`;
 
 
 
@@ -275,7 +274,7 @@ return `
   // Final output
   result.innerHTML = `
     🎤 <strong>${artist}</strong> has appeared <strong>${count}</strong> time(s).${extraInfo}<br><br>
-    🎶 <strong>Songs:</strong><ul>${songList}</ul>
+    🎶 <strong>Songs:</strong>${songTable}
     ${warning}
   `;
   fetchArtistInfo(artist);

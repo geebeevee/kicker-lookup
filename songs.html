@@ -11,27 +11,25 @@
   <header>
     <h1>Kicker's Music League</h1>
     <p>The spreadsheet must be obeyed.......</p>
-	<button onclick="location.href='index.html'" class="switch-button">🔄Switch to Artist Search🔄</button>
-
-
+    <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px;">
+      <button onclick="location.href='index.html'" class="switch-button">🎧 Artist Search</button>
+      <button onclick="location.href='deepdive.html'" class="switch-button">📼 Archive Deep Dive</button>
+    </div>
   </header>
 
 <div class="main-container">
-
   <div class="left-panel">
     <h2>🔍 Song Search</h2>
-
+    <p style="font-size:13px;opacity:.7;margin-bottom:10px;">Type a song name and press Enter to see all matches, or click a suggestion for an exact song.</p>
     <input type="text" id="songInput" placeholder="Start typing a song name..." autocomplete="off" />
     <div id="songSuggestions" class="suggestion-box"></div>
-
-    <div id="songResults"></div>
+    <div id="songResults" style="margin-top:16px;"></div>
   </div>
-
 </div>
 
 <footer>
   <button id="darkToggle">Dark Mode Toggle</button>
-  <p>blame Rhys for this | powered by Wikipedia | in case of conflict - the spreadsheet wins | v1.15b</p>
+  <p>blame Rhys for this | powered by Wikipedia | in case of conflict - the spreadsheet wins | v1.18</p>
 </footer>
 
 <script src="script.js"></script>
@@ -39,10 +37,3 @@
 
 </body>
 </html>
-
-
-
-
-
-
-

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Song Summary - Music League</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <style>
+    .vote-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .vote-table th {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 2px solid var(--border);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.6;
+    }
+    .vote-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .vote-table tr:last-child td { border-bottom: none; }
+    .vote-table tr:hover td { background: var(--hover); }
+    .score-pill {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .score-high { background: #d4edda; color: #155724; }
+    .score-low  { background: #f8d7da; color: #721c24; }
+    .score-mid  { background: var(--bg-alt); color: var(--text); }
+    body.dark .score-high { background: #1a3d27; color: #7ed9a0; }
+    body.dark .score-low  { background: #3d1a1e; color: #f08090; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Song Summary</h1>
+    <p id="loading">Loading song details...</p>
+
+    <div id="pending-message" style="display:none; background: #fff3cd; padding: 10px; border-radius: 5px; color: #856404; margin: 10px 0;">
+      📊 <strong>League Data Pending:</strong> Detailed data for League <span id="pending-league"></span> is not yet in the archive.
+    </div>
+
+    <p id="header-subtitle" style="margin-top: 10px; font-weight: bold;">
+      <span id="display-song"></span> by <span id="display-artist"></span> (League <span id="display-league"></span>)
+    </p>
+
+    <button onclick="history.back()" class="switch-button" style="margin-top: 10px;">⬅️ Back to Results</button>
+  </header>
+
+  <div class="main-container" id="content" style="display:none;">
+    <div class="left-panel" style="width: 100%; max-width: 800px; margin: 0 auto;">
+
+      <div class="card" style="margin-bottom: 20px; padding: 15px; border: 1px solid var(--border); border-radius: 8px;">
+        <h2 id="round-name"></h2>
+        <p id="round-description" style="font-style: italic; opacity: 0.9;"></p>
+      </div>
+
+      <div class="card" style="margin-bottom: 20px; padding: 15px; border: 1px solid var(--border); border-radius: 8px;">
+        <h3 id="sub-song-title"></h3>
+        <p>Submitted by: <strong id="sub-owner"></strong></p>
+        <blockquote id="sub-comment" style="border-left: 4px solid var(--link); padding-left: 15px; margin: 10px 0;"></blockquote>
+        <div id="spotify-player" style="margin-top: 15px;"></div>
+      </div>
+
+      <h3>Voter Details</h3>
+      <div id="vote-list"></div>
+
+    </div>
+  </div>
+
+  <footer>
+    <button id="darkToggle">Dark Mode Toggle</button>
+    <p>blame Rhys for this | in case of conflict - the spreadsheet wins | v1.18</p>
+  </footer>
+
+  <script src="summary.js"></script>
+</body>
+</html>
