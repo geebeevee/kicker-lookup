@@ -11,3 +11,5 @@ try to find a wikipedia link for the artist and display
 2. top submitted artists - will display all artists equal or exceeded the max submission limit (read from worksheet cell)
 
 3. song search - will search for all times a song was submitted. can also display all songs with a given word or text by hitting "enter" after partial search
+
+4. as of v1.18, added lookup to historical data extracted from Music League exports. to both lookups above and in a new "archive deep dive" section
