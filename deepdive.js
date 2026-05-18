@@ -1,4 +1,4 @@
-// deepdive.js — v1.18 STANDALONE (local data.js, no Google Sheets fetch)
+// deepdive.js — v1.18
 
 
 const CSV_URLS = {
@@ -94,7 +94,7 @@ async function loadData() {
 
   const playerMap   = {};
   const nameHistory = {};
-  [...comps].sort((a,b) => num(getVal(a,'League')) - num(getVal(b,'League'))).forEach(c => {
+  [...comps].sort((a,b) => String(getVal(a,'League')).localeCompare(String(getVal(b,'League')), undefined, {numeric:true})).forEach(c => {
     const id = clean(getVal(c,'ID')), name = clean(getVal(c,'Name'));
     if (!id || !name) return;
     playerMap[id] = name;
@@ -123,7 +123,7 @@ async function loadData() {
   const roundNameMap = {};
   rnds.forEach(r => { roundNameMap[clean(getVal(r,'ID'))] = clean(getVal(r,'Name')); });
 
-  const leagues = [...new Set(subs.map(s => clean(getVal(s,'League'))))].sort((a,b) => num(a)-num(b));
+  const leagues = [...new Set(subs.map(s => clean(getVal(s,'League'))))].sort((a,b) => String(a).localeCompare(String(b), undefined, {numeric:true}));
   const latestLeague = leagues[leagues.length - 1];
 
   const note = document.getElementById('dataNote');
@@ -366,7 +366,7 @@ function renderMember(name) {
 
   const memberSubs=subs.filter(s=>memberIds.includes(clean(getVal(s,'Submitter ID'))));
   const memberVotes=vts.filter(v=>memberIds.includes(clean(getVal(v,'Voter ID'))));
-  const memberLeagues=[...new Set(memberSubs.map(s=>clean(getVal(s,'League'))))].sort((a,b)=>num(a)-num(b));
+  const memberLeagues=[...new Set(memberSubs.map(s=>clean(getVal(s,'League'))))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
   const totalReceived=memberSubs.reduce((acc,s)=>acc+(totalPts[clean(getVal(s,'Spotify URI'))]??0),0);
 
   let bestSub=null,bestPts=-Infinity,worstSub=null,worstPts=Infinity;
@@ -409,7 +409,7 @@ function renderMember(name) {
   }
 
   html+=`<div class="dd-section-title">Submission History</div>`;
-  [...memberSubs].sort((a,b)=>num(getVal(a,'League'))-num(getVal(b,'League'))).forEach(s=>{
+  [...memberSubs].sort((a,b)=>String(getVal(a,'League')).localeCompare(String(getVal(b,'League')),undefined,{numeric:true})).forEach(s=>{
     const pts=totalPts[clean(getVal(s,'Spotify URI'))]??0;
     const params=new URLSearchParams({song:getVal(s,'Title'),artist:getVal(s,'Artist(s)'),league:getVal(s,'League')});
     const barW=Math.round((Math.abs(pts)/maxPts)*100);
@@ -427,8 +427,8 @@ function renderMember(name) {
     const roundOrderMap={};
     rnds.forEach((r,i)=>{roundOrderMap[clean(getVal(r,'ID'))]=i;});
     const sortedVotes=[...memberVotes].sort((a,b)=>{
-      const la=num(getVal(a,'League')),lb=num(getVal(b,'League'));
-      if(la!==lb) return la-lb;
+      const la=String(getVal(a,'League')),lb=String(getVal(b,'League'));
+      const lcmp=la.localeCompare(lb,undefined,{numeric:true}); if(lcmp!==0) return lcmp;
       return (roundOrderMap[clean(getVal(a,'Round ID'))]??999)-(roundOrderMap[clean(getVal(b,'Round ID'))]??999);
     });
     const voteRows=sortedVotes.map(v=>{
@@ -529,7 +529,7 @@ function renderH2H(nameA,nameB){
   const bOnA=vts.filter(v=>idsB.includes(clean(getVal(v,'Voter ID')))&&urisA.has(clean(getVal(v,'Spotify URI'))));
   const avgAonB=aOnB.length?aOnB.reduce((acc,v)=>acc+num(getVal(v,'Points')),0)/aOnB.length:null;
   const avgBonA=bOnA.length?bOnA.reduce((acc,v)=>acc+num(getVal(v,'Points')),0)/bOnA.length:null;
-  const sharedLeagues=[...new Set(subsA.map(s=>clean(getVal(s,'League'))))].filter(l=>[...new Set(subsB.map(s=>clean(getVal(s,'League'))))].includes(l)).sort((a,b)=>num(a)-num(b));
+  const sharedLeagues=[...new Set(subsA.map(s=>clean(getVal(s,'League'))))].filter(l=>[...new Set(subsB.map(s=>clean(getVal(s,'League'))))].includes(l)).sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
 
   function avgDisplay(val,label){
     if(val===null) return`<div class="h2h-avg neu">—</div><p style="opacity:.6;font-size:13px;">No shared leagues</p>`;
