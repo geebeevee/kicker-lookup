@@ -22,7 +22,7 @@ if (dmBtn) {
   });
 }
 
-const clean = s => String(s ?? '').replace(/^\uFEFF/, '').trim().toLowerCase().replace(/\s*\/\s*/g, '/');
+const clean = s => String(s ?? '').replace(/^\uFEFF/, '').trim().toLowerCase().replace(/\s*\/\s*/g, '/').replace(/["\u201C\u201D\u2018\u2019]/g, '');
 
 function getVal(obj, keyHint) {
   if (!obj) return '';
